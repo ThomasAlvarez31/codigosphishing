@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrenamiento: Identificando URLs Seguras</title>
+    <style>
+        :root {
+            --browser-bg: #e2e8f0;
+            --bar-bg: #ffffff;
+            --url-bg: #f1f5f9;
+            --text-dark: #1e293b;
+            --text-gray: #64748b;
+            --safe-color: #22c55e;
+            --fake-color: #ef4444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #cbd5e1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Ventana del Navegador */
+        .browser-window {
+            background-color: white;
+            width: 100%;
+            max-width: 700px;
+            border-radius: 10px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Cabecera del Navegador (Botones Mac y Pestaña) */
+        .browser-header {
+            background-color: var(--browser-bg);
+            padding: 10px 15px 0 15px;
+            display: flex;
+            align-items: flex-end;
+            gap: 15px;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 6px;
+            padding-bottom: 12px;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .dot.red { background-color: #ff5f56; }
+        .dot.yellow { background-color: #ffbd2e; }
+        .dot.green { background-color: #27c93f; }
+
+        .tab {
+            background-color: white;
+            padding: 8px 20px;
+            border-radius: 8px 8px 0 0;
+            font-size: 13px;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 150px;
+        }
+
+        /* Barra de Direcciones */
+        .address-bar-container {
+            background-color: white;
+            padding: 12px 15px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            color: var(--text-gray);
+            font-size: 18px;
+        }
+
+        .address-bar {
+            flex-grow: 1;
+            background-color: var(--url-bg);
+            border-radius: 20px;
+            padding: 8px 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: monospace;
+            font-size: 15px;
+            color: var(--text-dark);
+            border: 2px solid transparent;
+            transition: border-color 0.2s;
+        }
+
+        .address-bar:hover {
+            border-color: #cbd5e1;
+        }
+
+        .lock-icon {
+            font-size: 14px;
+        }
+
+        /* Contenido de la página falsa */
+        .page-content {
+            padding: 60px 20px;
+            text-align: center;
+            background-color: #f8fafc;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .page-logo {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .page-title {
+            font-size: 20px;
+            color: var(--text-dark);
+            margin-bottom: 10px;
+        }
+
+        /* Controles de Decisión */
+        .decision-panel {
+            background-color: white;
+            padding: 20px;
+            border-top: 2px solid #e2e8f0;
+            text-align: center;
+            z-index: 5;
+        }
+
+        .decision-panel h3 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+        }
+
+        .btn-container {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s, filter 0.2s;
+        }
+
+        button:hover { filter: brightness(0.9); }
+        button:active { transform: scale(0.95); }
+
+        .btn-safe { background-color: var(--safe-color); color: white; }
+        .btn-fake { background-color: var(--fake-color); color: white; }
+
+        /* Feedback Overlay */
+        .feedback-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            box-sizing: border-box;
+            z-index: 20;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            text-align: center;
+        }
+
+        .feedback-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .feedback-icon { font-size: 60px; margin-bottom: 10px; }
+        .feedback-title { font-size: 24px; font-weight: bold; margin-bottom: 15px; }
+        .feedback-text { font-size: 16px; color: #475569; margin-bottom: 25px; line-height: 1.5; max-width: 500px; }
+        
+        .btn-next {
+            background-color: var(--text-dark);
+            color: white;
+            width: 200px;
+        }
+
+        /* Pantalla Final */
+        .final-screen {
+            display: none;
+            padding: 40px;
+            text-align: center;
+            background: white;
+            height: 100%;
+        }
+
+        .highlight-url {
+            background-color: #fef08a;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-weight: bold;
+            color: #b45309;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="browser-window">
+        <div class="browser-header">
+            <div class="window-controls">
+                <div class="dot red"></div>
+                <div class="dot yellow"></div>
+                <div class="dot green"></div>
+            </div>
+            <div class="tab">
+                <span id="tab-icon">🌐</span> <span id="tab-title">Cargando...</span>
+            </div>
+        </div>
+
+        <div class="address-bar-container">
+            <div class="nav-buttons">⬅️ ➡️ 🔄</div>
+            <div class="address-bar" id="address-bar">
+                <span class="lock-icon" id="lock-icon">🔒</span>
+                <span id="url-text">https://ejemplo.com</span>
+            </div>
+        </div>
+
+        <div class="page-content" id="page-content">
+            <div class="page-logo" id="page-logo">🏦</div>
+            <div class="page-title" id="page-title">Iniciar Sesión</div>
+            <div style="width: 250px; height: 30px; background: #e2e8f0; border-radius: 5px; margin-bottom: 10px;"></div>
+            <div style="width: 250px; height: 30px; background: #e2e8f0; border-radius: 5px; margin-bottom: 20px;"></div>
+            <div style="width: 120px; height: 35px; background: #3b82f6; border-radius: 5px;"></div>
+        </div>
+
+        <div class="decision-panel" id="decision-panel">
+            <h3>Analiza la URL de arriba. ¿Es una página segura?</h3>
+            <div class="btn-container">
+                <button class="btn-safe" onclick="checkAnswer(true)">✅ Es Legítima</button>
+                <button class="btn-fake" onclick="checkAnswer(false)">🚨 Es Phishing</button>
+            </div>
+        </div>
+
+        <div class="feedback-overlay" id="feedback-overlay">
+            <div class="feedback-icon" id="feedback-icon"></div>
+            <div class="feedback-title" id="feedback-title"></div>
+            <div class="feedback-text" id="feedback-text"></div>
+            <button class="btn-next" onclick="nextScenario()">Siguiente Caso</button>
+        </div>
+
+        <div class="final-screen" id="final-screen">
+            <div style="font-size: 50px; margin-bottom: 20px;">🕵️‍♂️</div>
+            <h2>¡Análisis Completado!</h2>
+            <p>Puntuación: <strong id="final-score" style="font-size: 24px;">0</strong> de 5</p>
+            <div style="text-align: left; background: #f8fafc; padding: 20px; border-radius: 10px; margin: 20px 0; font-size: 14px; line-height: 1.6;">
+                <strong>Recuerda siempre:</strong>
+                <ul style="padding-left: 20px;">
+                    <li>El dominio real es la palabra que está <strong>justo antes del último punto</strong> y la barra diagonal (ej: en <span class="highlight-url">google.com/login</span>, el dominio es google).</li>
+                    <li>Un candado (HTTPS) solo significa que la conexión es privada, <strong>¡los estafadores también usan el candado!</strong></li>
+                    <li>Busca errores tipográficos (Netflix vs Netflix, Amazon vs Amaz0n).</li>
+                </ul>
+            </div>
+            <button class="btn-safe" onclick="location.reload()">Reintentar</button>
+        </div>
+    </div>
+
+    <script>
+        const scenarios = [
+            {
+                url: "https://www.mercadolibre.com.co-login.info/auth",
+                lock: "🔒",
+                logo: "🤝",
+                title: "Mercado Libre - Ingresar",
+                isLegit: false,
+                explanation: "El dominio real aquí es <span class='highlight-url'>co-login.info</span>, NO mercadolibre.com. Los atacantes crean subdominios largos para engañar al ojo. ¡Que tenga el candado no la hace segura!"
+            },
+            {
+                url: "https://www.paypal.com/signin",
+                lock: "🔒",
+                logo: "🅿️",
+                title: "PayPal Login",
+                isLegit: true,
+                explanation: "Esta es legítima. El dominio principal, justo antes de la primera barra diagonal simple (/), es exactamente <span class='highlight-url'>paypal.com</span>."
+            },
+            {
+                url: "http://www.bancochile.cl.seguridad.com/verificar",
+                lock: "🔓",
+                logo: "🏦",
+                title: "Banco - Verificación",
+                isLegit: false,
+                explanation: "Dos alertas rojas: 1) Dice HTTP sin 's' (candado abierto), por lo que tus datos viajan sin encriptar. 2) El dominio real es <span class='highlight-url'>seguridad.com</span>, no bancochile.cl."
+            },
+            {
+                url: "https://www.instaqram.com/accounts/login",
+                lock: "🔒",
+                logo: "📷",
+                title: "Instagram",
+                isLegit: false,
+                explanation: "Esto se llama 'Typosquatting'. Observa detenidamente: dice instaqram con 'q' en lugar de 'g'. Aunque tiene candado, es una página falsa diseñada para robar tus credenciales."
+            },
+            {
+                url: "https://auth.microsoft.com/login",
+                lock: "🔒",
+                logo: "🪟",
+                title: "Microsoft Account",
+                isLegit: true,
+                explanation: "Esta es segura. 'auth' es un subdominio válido, pero la estructura final antes de la barra es <span class='highlight-url'>microsoft.com</span>."
+            }
+        ];
+
+        let currentIndex = 0;
+        let score = 0;
+
+        function renderScenario() {
+            if (currentIndex >= scenarios.length) {
+                showFinal();
+                return;
+            }
+
+            const current = scenarios[currentIndex];
+            
+            document.getElementById('url-text').innerText = current.url;
+            document.getElementById('lock-icon').innerText = current.lock;
+            
+            // Cambiar color de la URL para dar un tono más realista si no tiene candado
+            document.getElementById('url-text').style.color = current.lock === "🔓" ? "#ef4444" : "var(--text-dark)";
+
+            document.getElementById('page-logo').innerText = current.logo;
+            document.getElementById('page-title').innerText = current.title;
+            document.getElementById('tab-title').innerText = current.title;
+        }
+
+        function checkAnswer(userSaysLegit) {
+            const current = scenarios[currentIndex];
+            const isCorrect = userSaysLegit === current.isLegit;
+
+            const fbIcon = document.getElementById('feedback-icon');
+            const fbTitle = document.getElementById('feedback-title');
+            
+            if (isCorrect) {
+                score++;
+                fbIcon.innerText = "🎯";
+                fbTitle.innerText = "¡Buen ojo!";
+                fbTitle.style.color = "var(--safe-color)";
+            } else {
+                fbIcon.innerText = "🎣";
+                fbTitle.innerText = "Caíste en la trampa";
+                fbTitle.style.color = "var(--fake-color)";
+            }
+
+            document.getElementById('feedback-text').innerHTML = current.explanation;
+            document.getElementById('feedback-overlay').classList.add('active');
+        }
+
+        function nextScenario() {
+            document.getElementById('feedback-overlay').classList.remove('active');
+            currentIndex++;
+            setTimeout(renderScenario, 300);
+        }
+
+        function showFinal() {
+            document.querySelector('.browser-header').style.display = 'none';
+            document.querySelector('.address-bar-container').style.display = 'none';
+            document.getElementById('page-content').style.display = 'none';
+            document.getElementById('decision-panel').style.display = 'none';
+            
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('final-screen').style.display = 'block';
+        }
+
+        // Iniciar
+        renderScenario();
+    </script>
+</body>
+</html>

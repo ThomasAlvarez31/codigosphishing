@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desafío Final: El Ojo del Detective</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --panel: #ffffff;
+            --primary: #4ecca3;
+            --found: #ff4d4d;
+            --text: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 { margin-bottom: 10px; color: var(--primary); }
+        .instruction { margin-bottom: 25px; font-size: 1.1em; text-align: center; max-width: 800px; }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .email-card {
+            background: var(--panel);
+            color: var(--text);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .email-header {
+            background: #f1f5f9;
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .email-body {
+            padding: 20px;
+            line-height: 1.6;
+            flex-grow: 1;
+        }
+
+        /* Elementos Detectables */
+        .flag {
+            cursor: help;
+            border-radius: 4px;
+            transition: all 0.3s;
+            display: inline-block;
+            border: 1px solid transparent;
+        }
+
+        .flag:hover {
+            background-color: rgba(255, 77, 77, 0.1);
+            border-color: #ff4d4d;
+        }
+
+        .flag.detected {
+            background-color: #ff4d4d !important;
+            color: white !important;
+            padding: 2px 5px;
+            font-weight: bold;
+            pointer-events: none;
+        }
+
+        .sender-zone { margin-bottom: 10px; font-size: 0.9em; }
+        .subject-zone { font-weight: bold; margin-bottom: 15px; }
+        .footer-zone { margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px; font-size: 0.85em; color: #777; }
+
+        .btn-link {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+
+        /* Contador */
+        .counter-panel {
+            background: rgba(255,255,255,0.1);
+            padding: 15px 40px;
+            border-radius: 50px;
+            margin-bottom: 20px;
+            border: 2px solid var(--primary);
+            font-size: 1.5em;
+        }
+
+        #message-final {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--primary);
+            color: #1a1a2e;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            z-index: 100;
+            box-shadow: 0 0 100px rgba(78, 204, 163, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🕵️‍♂️ Análisis Forense de Emails</h1>
+    <p class="instruction">Hay <b>10 señales de peligro</b> ocultas (5 en cada lado). <br>¡Hagan clic en los elementos sospechosos para marcarlos!</p>
+
+    <div class="counter-panel">
+        Hallazgos: <span id="count">0</span> / 10
+    </div>
+
+    <div class="dashboard">
+        <div class="email-card">
+            <div class="email-header">
+                <div class="sender-zone">
+                    De: <span class="flag" onclick="mark(this, 'Remitente falso: amazon-pagos.net no es la web oficial de Amazon.')">soporte@amazon-pagos.net</span>
+                </div>
+                <div class="subject-zone">Asunto: Su reembolso de $500.00 USD está listo</div>
+            </div>
+            <div class="email-body">
+                <p><span class="flag" onclick="mark(this, 'Saludo genérico: No usan tu nombre real.')">Estimado usuario de nuestra plataforma:</span></p>
+                
+                <p>Nos complace informarle que debido a un error en el cobro de su membresía Prime, tiene un <span class="flag" onclick="mark(this, 'Gancho de curiosidad/dinero: Promesa de dinero fácil.')">reembolso acumulado de $500.00 USD</span> esperando ser transferido a su cuenta.</p>
+                
+                <p>Para reclamar este beneficio, debe completar el formulario de registro en nuestro servidor seguro de inmediato:</p>
+                
+                <center>
+                    <span class="flag" onclick="mark(this, 'Enlace falso: Al pasar el mouse verías una URL extraña.')" class="btn-link" style="color: blue; text-decoration: underline; cursor: pointer;">RECLAMAR REEMBOLSO AQUÍ</span>
+                </center>
+
+                <div class="footer-zone">
+                    <p><span class="flag" onclick="mark(this, 'Firma sospechosa: Departamento inexistente o genérico.')">© 2026 Equipo de Pagos Globales Rápidos</span></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="email-card">
+            <div class="email-header">
+                <div class="sender-zone">
+                    De: <span class="flag" onclick="mark(this, 'Remitente falso: outlook-security.org no pertenece a Microsoft.')">alerta@outlook-security.org</span>
+                </div>
+                <div class="subject-zone">Asunto: ALERTA DE SEGURIDAD: Acceso no autorizado</div>
+            </div>
+            <div class="email-body">
+                <p><span class="flag" onclick="mark(this, 'Saludo impersonal: Usan tu dirección de correo en vez de tu nombre.')">Hola usuario (juan.perez@email.com):</span></p>
+                
+                <p>Alguien desde Moscú, Rusia, ha intentado acceder a su bandeja de entrada. <span class="flag" onclick="mark(this, 'Factor Urgencia: Te obligan a actuar en minutos.')">Si no confirma su identidad en los próximos 5 minutos, su cuenta será borrada permanentemente.</span></p>
+                
+                <p>Haga clic en el botón inferior para validar que es usted y evitar la pérdida de sus archivos:</p>
+                
+                <center>
+                    <span class="flag" onclick="mark(this, 'Botón de riesgo: La urgencia te impide pensar antes de hacer clic.')" style="background: #dc2626; color: white; padding: 10px 20px; border-radius: 5px; cursor: pointer; display: inline-block;">SÍ, SOY YO (ACTUALIZAR)</span>
+                </center>
+
+                <div class="footer-zone">
+                    <p><span class="flag" onclick="mark(this, 'Firma corporativa falsa: Mezclan nombres de marcas.')">Soporte Técnico de Windows-Google Cloud Services</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="message-final">
+        <h2>¡EXCELENTE TRABAJO, EQUIPO!</h2>
+        <p style="font-size: 1.2em;">Han identificado todas las amenazas. <br> Ahora están listos para navegar seguros.</p>
+        <button onclick="location.reload()" style="padding: 10px 20px; cursor: pointer; border-radius: 5px; border: none; font-weight: bold;">Cerrar Caso</button>
+    </div>
+
+    <script>
+        let found = 0;
+        const total = 10;
+
+        function mark(element, explanation) {
+            if (!element.classList.contains('detected')) {
+                element.classList.add('detected');
+                found++;
+                document.getElementById('count').innerText = found;
+                
+                // Mostrar alerta con la explicación de por qué es phishing
+                alert("🔍 ¡DETECTADO!\n\n" + explanation);
+
+                if (found === total) {
+                    document.getElementById('message-final').style.display = 'block';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

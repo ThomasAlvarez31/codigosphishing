@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Crisis Digital</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --accent: #f43f5e;
+            --success: #10b981;
+            --text: #f8fafc;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: var(--card);
+            width: 100%;
+            max-width: 600px;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+        }
+
+        .header h1 { font-size: 22px; color: var(--accent); margin: 0; }
+
+        .scenario-box {
+            font-size: 18px;
+            line-height: 1.5;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(244, 63, 94, 0.1);
+            border-radius: 12px;
+            border-left: 4px solid var(--accent);
+        }
+
+        .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-btn {
+            background: #334155;
+            border: 2px solid transparent;
+            color: white;
+            padding: 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 15px;
+            transition: all 0.2s;
+        }
+
+        .option-btn:hover {
+            background: #475569;
+            border-color: #64748b;
+        }
+
+        /* Overlay de Retroalimentación */
+        .feedback-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--card);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            padding: 40px;
+            box-sizing: border-box;
+            z-index: 10;
+            text-align: center;
+        }
+
+        .feedback-overlay.active { display: flex; }
+
+        .f-icon { font-size: 60px; margin-bottom: 20px; }
+        .f-title { font-size: 24px; font-weight: bold; margin-bottom: 15px; }
+        .f-desc { font-size: 16px; color: #94a3b8; line-height: 1.6; margin-bottom: 30px; }
+
+        .next-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Pantalla Final */
+        #final-screen { display: none; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <div id="game-view">
+            <div class="header">
+                <h1 id="stage-title">CRISIS 1: CONTENER</h1>
+            </div>
+
+            <div class="scenario-box" id="scenario-text">
+                Escenario...
+            </div>
+
+            <div class="options-grid" id="options-container">
+                </div>
+        </div>
+
+        <div class="feedback-overlay" id="feedback-overlay">
+            <div class="f-icon" id="f-icon">❌</div>
+            <div class="f-title" id="f-title">Resultado</div>
+            <div class="f-desc" id="f-desc">Explicación</div>
+            <button class="next-btn" onclick="nextStage()">Continuar</button>
+        </div>
+
+        <div id="final-screen">
+            <div style="font-size: 60px;">🏆</div>
+            <h2>¡Protocolo de Emergencia Finalizado!</h2>
+            <p>Has aprendido a reaccionar bajo presión. Recuerda: No importa cuántas veces te protejas, lo importante es saber qué hacer el día que fallas.</p>
+            <button class="next-btn" style="background: var(--success);" onclick="location.reload()">Reiniciar Taller</button>
+        </div>
+    </div>
+
+    <script>
+        const stages = [
+            {
+                title: "PASO 1: CONTENER",
+                scenario: "¡Rayos! Acabas de darte cuenta de que la página donde pusiste tu clave del banco era FALSA. Sientes que el corazón te late rápido. ¿Cuál es tu primera acción?",
+                options: [
+                    { text: "Entrar a la app real del banco y cambiar la clave rápido.", correct: false, note: "<strong>Riesgo:</strong> Mientras tú intentas cambiar la clave, el estafador ya puede estar transfiriendo. La prioridad máxima es <b>BLOQUEAR</b> la cuenta llamando al banco, no solo cambiar la clave." },
+                    { text: "Llamar al banco de inmediato para bloquear tarjetas y acceso web.", correct: true, note: "<strong>¡Correcto!</strong> El bloqueo telefónico es la acción más rápida para detener el flujo de dinero. No confíes en que serás más rápido que un bot cambiando una clave." },
+                    { text: "Esperar a ver si llega un correo de confirmación de movimiento.", correct: false, note: "<strong>Riesgo:</strong> ¡Nunca esperes! El phishing es un delito de segundos. Para cuando llegue el correo, tu cuenta podría estar en cero." }
+                ]
+            },
+            {
+                title: "PASO 2: AVISAR",
+                scenario: "Te han hackeado el WhatsApp y tus contactos están recibiendo mensajes pidiendo dinero a tu nombre. Estás muy avergonzado/a. ¿Qué haces?",
+                options: [
+                    { text: "No decir nada y esperar a recuperar la cuenta en silencio.", correct: false, note: "<strong>Riesgo:</strong> El silencio es el mejor aliado del estafador. Tus amigos podrían caer pensando que realmente eres tú quien necesita ayuda." },
+                    { text: "Publicar en Instagram/Facebook y avisar a familiares por llamada.", correct: true, note: "<strong>¡Correcto!</strong> Debes romper la cadena de confianza. Avisar a tu círculo cercano permite que ellos difundan la alerta: 'No le depositen a Juan, lo hackearon'." },
+                    { text: "Intentar hackear de vuelta al estafador.", correct: false, note: "<strong>Riesgo:</strong> Aparte de ser difícil, pierdes tiempo valioso. Tu prioridad es proteger a tus contactos, no jugar a ser hacker." }
+                ]
+            },
+            {
+                title: "PASO 3: DENUNCIAR",
+                scenario: "Lograste bloquear tus cuentas. Tienes capturas de pantalla del sitio falso y los mensajes del estafador. ¿Qué haces con esa evidencia?",
+                options: [
+                    { text: "Borrar todo para olvidar el mal rato y no dejar rastro.", correct: false, note: "<strong>Error:</strong> Sin evidencia, no hay investigación. Las capturas son vitales para que la policía rastree al criminal." },
+                    { text: "Publicarlas en un grupo de denuncias en Facebook y ya.", correct: false, note: "<strong>Insuficiente:</strong> Ayuda a prevenir a otros, pero no tiene validez legal. El delito queda impune." },
+                    { text: "Ir a la PDI (Cibercrimen) o Fiscalía para hacer la denuncia formal.", correct: true, note: "<strong>¡Correcto!</strong> La denuncia oficial permite que las unidades de inteligencia informática rastreen la IP y el origen del ataque para cerrar esos sitios." }
+                ]
+            }
+        ];
+
+        let currentStage = 0;
+
+        function renderStage() {
+            if (currentStage >= stages.length) {
+                document.getElementById('game-view').style.display = 'none';
+                document.getElementById('final-screen').style.display = 'block';
+                return;
+            }
+
+            const stage = stages[currentStage];
+            document.getElementById('stage-title').innerText = stage.title;
+            document.getElementById('scenario-text').innerText = stage.scenario;
+            
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+
+            stage.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = opt.text;
+                btn.onclick = () => showFeedback(opt);
+                container.appendChild(btn);
+            });
+        }
+
+        function showFeedback(opt) {
+            const overlay = document.getElementById('feedback-overlay');
+            document.getElementById('f-icon').innerText = opt.correct ? "✅" : "⚠️";
+            document.getElementById('f-title').innerText = opt.correct ? "¡Bien hecho!" : "Decisión Arriesgada";
+            document.getElementById('f-desc').innerHTML = opt.note;
+            overlay.classList.add('active');
+        }
+
+        function nextStage() {
+            currentStage++;
+            document.getElementById('feedback-overlay').classList.remove('active');
+            renderStage();
+        }
+
+        renderStage();
+    </script>
+</body>
+</html>

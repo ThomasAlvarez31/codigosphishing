@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Phishing - WhatsApp</title>
+    <style>
+        :root {
+            --wa-green: #075E54;
+            --wa-light-green: #25D366;
+            --wa-bg: #E5DDD5;
+            --wa-msg-bg: #FFFFFF;
+            --wa-msg-sent: #DCF8C6;
+            --text-dark: #303030;
+            --text-gray: #808080;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .phone-container {
+            width: 100%;
+            max-width: 400px;
+            height: 800px;
+            max-height: 100vh;
+            background-color: var(--wa-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Cabecera estilo WhatsApp */
+        .header {
+            background-color: var(--wa-green);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            background-color: #ccc;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+        }
+
+        .contact-info h2 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .contact-info p {
+            margin: 0;
+            font-size: 12px;
+            color: #e0e0e0;
+        }
+
+        /* Área del chat */
+        .chat-area {
+            flex-grow: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
+            background-size: cover;
+            position: relative;
+        }
+
+        .message {
+            background-color: var(--wa-msg-bg);
+            padding: 10px 15px;
+            border-radius: 0 10px 10px 10px;
+            max-width: 85%;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            position: relative;
+            font-size: 15px;
+            line-height: 1.4;
+            color: var(--text-dark);
+            animation: popIn 0.3s ease-out;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .message .time {
+            display: block;
+            text-align: right;
+            font-size: 11px;
+            color: var(--text-gray);
+            margin-top: 5px;
+        }
+
+        /* Controles del juego */
+        .game-controls {
+            background-color: white;
+            padding: 20px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .game-controls h3 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            color: var(--text-dark);
+        }
+
+        .btn-container {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+            flex: 1;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .btn-true {
+            background-color: var(--wa-light-green);
+            color: white;
+        }
+
+        .btn-false {
+            background-color: #ff4444;
+            color: white;
+        }
+
+        /* Pantalla de Feedback (Explicación) */
+        .feedback-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .feedback-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .feedback-card {
+            background: white;
+            width: 80%;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+
+        .feedback-overlay.active .feedback-card {
+            transform: translateY(0);
+        }
+
+        .feedback-icon {
+            font-size: 50px;
+            margin-bottom: 15px;
+        }
+
+        .feedback-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .feedback-text {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .btn-next {
+            background-color: var(--wa-green);
+            color: white;
+            width: 100%;
+        }
+
+        /* Pantalla final */
+        .score-screen {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            background: white;
+            padding: 20px;
+            text-align: center;
+            z-index: 30;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="phone-container">
+        <div class="header">
+            <div class="avatar" id="contact-avatar">👤</div>
+            <div class="contact-info">
+                <h2 id="contact-name">Desconocido</h2>
+                <p>en línea</p>
+            </div>
+        </div>
+
+        <div class="chat-area" id="chat-area">
+            </div>
+
+        <div class="game-controls" id="game-controls">
+            <h3>¿Este mensaje es Real o Phishing?</h3>
+            <div class="btn-container">
+                <button class="btn-true" onclick="checkAnswer(false)">Real ✅</button>
+                <button class="btn-false" onclick="checkAnswer(true)">Phishing 🎣</button>
+            </div>
+        </div>
+
+        <div class="feedback-overlay" id="feedback-overlay">
+            <div class="feedback-card">
+                <div class="feedback-icon" id="feedback-icon">✅</div>
+                <div class="feedback-title" id="feedback-title">¡Correcto!</div>
+                <div class="feedback-text" id="feedback-text">Explicación aquí.</div>
+                <button class="btn-next" onclick="nextMessage()">Siguiente Mensaje</button>
+            </div>
+        </div>
+
+        <div class="score-screen" id="score-screen">
+            <h1 style="font-size: 50px; margin: 0;">🏆</h1>
+            <h2>¡Entrenamiento Completado!</h2>
+            <p>Has identificado correctamente <strong id="final-score">0</strong> de 5 mensajes.</p>
+            <p style="font-size: 14px; color: gray; margin-bottom: 20px;">
+                Recuerda: Los ciberdelincuentes casi siempre usan la <strong>urgencia</strong> (cuentas bloqueadas, ofertas que expiran, jefes en apuros) para que actúes rápido y sin pensar. ¡Tómate siempre unos segundos para verificar!
+            </p>
+            <button class="btn-true" onclick="location.reload()">Jugar de nuevo</button>
+        </div>
+    </div>
+
+    <script>
+        // Base de datos de mensajes (Enfocados en el factor Urgencia)
+        const messages = [
+            {
+                sender: "Soporte Bancario",
+                avatar: "🏦",
+                text: "⚠️ URGENTE: Su cuenta ha sido suspendida temporalmente por intentos de acceso sospechosos. Para evitar el bloqueo definitivo, verifique su identidad en los próximos 10 minutos aquí: http://banco-seguridad-alerta.com",
+                isPhishing: true,
+                explanation: "El atacante crea un estado de emergencia ('URGENTE', 'próximos 10 minutos', 'bloqueo definitivo'). El objetivo es causarte pánico para que hagas clic en el enlace falso sin revisar la URL."
+            },
+            {
+                sender: "Compañero de Trabajo",
+                avatar: "👨‍💻",
+                text: "Hola, te recuerdo que mañana a las 10:00 AM tenemos la reunión de planificación mensual. Nos vemos en la sala 3.",
+                isPhishing: false,
+                explanation: "Este es un mensaje normal. No exige acciones inmediatas que involucren dinero, clics en enlaces extraños, ni usa amenazas de consecuencias negativas."
+            },
+            {
+                sender: "Tu Jefe (Director)",
+                avatar: "👔",
+                text: "¡Hola! Estoy en una reunión con clientes importantes y mi tarjeta no pasa. Necesito que compres 5 tarjetas de regalo de Apple de $100 de INMEDIATO y me mandes los códigos. Es de suma urgencia, te reembolso en una hora.",
+                isPhishing: true,
+                explanation: "Clásico fraude del CEO o 'Fraude del Jefe'. Usan la autoridad y la urgencia ('de INMEDIATO', 'suma urgencia') para saltarse los protocolos. Nunca un jefe te pedirá tarjetas de regalo por WhatsApp."
+            },
+            {
+                sender: "Soporte Nėtflix",
+                avatar: "🎬",
+                text: "Su último pago ha sido rechazado. Su suscripción se cancelará en 2 horas. Actualice sus datos de facturación de inmediato para no perder su serie favorita: http://netfIix-pagos-update.info",
+                isPhishing: true,
+                explanation: "Urgencia extrema ('se cancelará en 2 horas'). Además, nota cómo la palabra 'Netflix' en el remitente tiene un punto raro, y la URL no es la oficial. Quieren tus datos bancarios rápido."
+            },
+            {
+                sender: "RRHH",
+                avatar: "📋",
+                text: "Estimados, por favor recuerden completar la encuesta de clima laboral antes de este viernes. Pueden encontrar el acceso en sus correos institucionales. ¡Gracias!",
+                isPhishing: false,
+                explanation: "Aunque tiene una fecha límite (el viernes), es un plazo razonable, no infunde pánico, no te pide dinero ni datos sensibles, y te redirige a un canal seguro y conocido (tu correo institucional)."
+            }
+        ];
+
+        let currentIndex = 0;
+        let score = 0;
+
+        const chatArea = document.getElementById('chat-area');
+        const contactName = document.getElementById('contact-name');
+        const contactAvatar = document.getElementById('contact-avatar');
+        const feedbackOverlay = document.getElementById('feedback-overlay');
+        const feedbackIcon = document.getElementById('feedback-icon');
+        const feedbackTitle = document.getElementById('feedback-title');
+        const feedbackText = document.getElementById('feedback-text');
+
+        // Función para mostrar el mensaje actual
+        function renderMessage() {
+            if (currentIndex >= messages.length) {
+                showScore();
+                return;
+            }
+
+            const currentMsg = messages[currentIndex];
+            contactName.innerText = currentMsg.sender;
+            contactAvatar.innerText = currentMsg.avatar;
+
+            // Obtener hora actual para realismo
+            const now = new Date();
+            const timeString = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+
+            chatArea.innerHTML = `
+                <div class="message">
+                    ${currentMsg.text}
+                    <span class="time">${timeString}</span>
+                </div>
+            `;
+        }
+
+        // Función para evaluar la respuesta del usuario
+        function checkAnswer(userSaysPhishing) {
+            const currentMsg = messages[currentIndex];
+            const isCorrect = userSaysPhishing === currentMsg.isPhishing;
+
+            if (isCorrect) {
+                score++;
+                feedbackIcon.innerText = "✅";
+                feedbackTitle.innerText = "¡Correcto!";
+                feedbackTitle.style.color = "var(--wa-green)";
+            } else {
+                feedbackIcon.innerText = "❌";
+                feedbackTitle.innerText = "¡Cuidado, te equivocaste!";
+                feedbackTitle.style.color = "#ff4444";
+            }
+
+            feedbackText.innerHTML = `<strong>Análisis:</strong> ${currentMsg.explanation}`;
+            feedbackOverlay.classList.add('active');
+        }
+
+        // Función para pasar al siguiente mensaje
+        function nextMessage() {
+            feedbackOverlay.classList.remove('active');
+            currentIndex++;
+            setTimeout(renderMessage, 300); // Pequeño retraso para la transición
+        }
+
+        // Mostrar pantalla final
+        function showScore() {
+            document.getElementById('game-controls').style.display = 'none';
+            chatArea.style.display = 'none';
+            document.querySelector('.header').style.display = 'none';
+            
+            const scoreScreen = document.getElementById('score-screen');
+            document.getElementById('final-score').innerText = score;
+            scoreScreen.style.display = 'flex';
+        }
+
+        // Iniciar el juego
+        renderMessage();
+    </script>
+</body>
+</html>
